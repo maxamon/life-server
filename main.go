@@ -47,6 +47,10 @@ func (w *World) GetRegion(x1, y1, x2, y2 int) []*Creature {
 	return result
 }
 
+func (w *World) RemoveCreature(id int) {
+	delete(w.Creatures, id)
+}
+
 func (w *World) Run() {
 	timer := time.NewTicker(time.Second / TickRate)
 	defer timer.Stop()
@@ -54,6 +58,10 @@ func (w *World) Run() {
 	for range timer.C {
 		w.Step()
 	}
+}
+
+func log(data string) {
+	fmt.Println(data)
 }
 
 func main() {
@@ -64,14 +72,21 @@ func main() {
 	}
 	for i := range 10000 {
 		world.Creatures[i] = &Creature{
-			ID:  i,
-			Pos: Vec2{i % 1000, i % 1000},
+			ID:     i,
+			Pos:    Vec2{i % 1000, i % 1000},
+			Energy: 10.0,
 		}
 	}
 
 	go world.Run()
 
-	http.HandleFunc("/region", regionHandler(world))
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
+		rw.Write([]byte(`<html><body><h1>Hello world</h1></body></html>`))
+	})
+	mux.HandleFunc("/region", regionHandler(world))
+	mux.HandleFunc("/ws", wsHandler(world))
 	fmt.Println("Started server http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", mux)
 }

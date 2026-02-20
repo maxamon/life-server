@@ -9,13 +9,23 @@ type Vec2 struct {
 }
 
 type Creature struct {
-	ID  int
-	Pos Vec2
+	ID     int
+	Pos    Vec2
+	Energy float32
 }
 
 func (c *Creature) Update(w *World) {
 	dx := rand.Intn(3) - 1
 	dy := rand.Intn(3) - 1
+	food := rand.Float32()
+
+	c.Energy += food
+	c.Energy -= 0.5
+
+	if c.Energy <= 0 {
+		w.RemoveCreature(c.ID)
+		return
+	}
 
 	c.Pos.X += dx
 	c.Pos.Y += dy
