@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A life simulation server in Go that simulates creatures moving in a 2D world. Creatures randomly move, consume energy, and die when energy depletes. The server exposes the world state via HTTP REST and WebSocket APIs.
+A life simulation server in Go that simulates creatures moving in a 2D world. Creatures randomly move, consume energy, die when energy depletes, and can reproduce when well-fed. The simulation includes overpopulation mechanics that affect food availability. The server exposes the world state via HTTP REST and WebSocket APIs.
 
 ## Configuration
 
@@ -12,6 +12,9 @@ Simulation parameters are loaded from `config.json` at startup:
 - `world_width`, `world_height` - World dimensions
 - `initial_creatures` - Number of creatures to spawn
 - `creature_initial_energy` - Starting energy for each creature
+- `max_population` - Maximum sustainable population (affects food multiplier)
+- `reproduction_energy_threshold` - Energy required to reproduce
+- `reproduction_energy_cost` - Energy cost for parent when reproducing
 
 ## Commands
 
@@ -37,10 +40,11 @@ go mod download
 
 - **World** (`main.go`): Central simulation state containing all creatures. Runs at 20 ticks/second in a goroutine with mutex-protected concurrent access (RWMutex for read operations, full Lock for writes).
 
-- **Creature** (`creature.go`): Entities that move randomly each tick, gain random energy (food), and lose 0.5 energy per tick. Die when energy ≤ 0.
+- **Creature** (`creature.go`): Entities that move randomly each tick, gain random energy (food) affected by population density, and lose 0.5 energy per tick. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring nearby.
 
 - **Server** (`server.go`): HTTP handlers for querying world state
   - `/region` - HTTP GET endpoint with query params `x1`, `y1`, `x2`, `y2` returns creatures in that region as JSON. Includes CORS headers and coordinate validation.
+  - `/stats` - HTTP GET endpoint that returns population statistics including total creatures and energy distribution (low/medium/high)
   - `/ws` - WebSocket endpoint that sends `world_bounds` message on connection, then accepts JSON messages with type `get_region` and payload with region coordinates
 
 ### Concurrency Model

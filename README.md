@@ -15,9 +15,20 @@ Edit `config.json` to adjust simulation parameters:
   "world_width": 1000,
   "world_height": 1000,
   "initial_creatures": 10000,
-  "creature_initial_energy": 10.0
+  "creature_initial_energy": 10.0,
+  "max_population": 15000,
+  "reproduction_energy_threshold": 15.0,
+  "reproduction_energy_cost": 8.0
 }
 ```
+
+**Parameters:**
+- `world_width`, `world_height` - World dimensions
+- `initial_creatures` - Starting number of creatures
+- `creature_initial_energy` - Energy for new creatures
+- `max_population` - Maximum sustainable population (affects food availability)
+- `reproduction_energy_threshold` - Energy needed to reproduce
+- `reproduction_energy_cost` - Energy parent loses when reproducing
 
 ## Quick Start
 
@@ -53,6 +64,25 @@ Example:
 curl "http://localhost:8080/region?x1=0&y1=0&x2=100&y2=100"
 ```
 
+**GET /stats** - Get population statistics
+
+Returns:
+```json
+{
+  "tick": 1234,
+  "total_creatures": 9876,
+  "low_energy_count": 123,
+  "medium_energy_count": 456,
+  "high_energy_count": 789,
+  "max_population": 15000,
+  "population_percentage": 65.84
+}
+```
+
+- `low_energy_count` - creatures with energy < 3
+- `medium_energy_count` - creatures with 3 <= energy < 7
+- `high_energy_count` - creatures with energy >= initial energy
+
 ### WebSocket
 
 **WS /ws** - WebSocket connection for real-time data
@@ -83,14 +113,22 @@ Client message format:
 }
 ```
 
-## Simulation Parameters
+## Simulation Mechanics
 
-Default values (configurable in `config.json`):
-- World size: 1000x1000
-- Initial creatures: 10,000
-- Starting energy: 10.0
+**Energy System:**
+- Creatures lose 0.5 energy per tick
+- Food gain varies based on population:
+  - Overpopulation (> max): reduced food
+  - Underpopulation (< max): increased food
+- Death occurs when energy <= 0
 
-Fixed parameters:
+**Reproduction:**
+- Creatures with energy >= threshold can reproduce
+- Offspring spawns at nearby position
+- Parent loses energy cost for reproduction
+- Child starts with initial energy
+
+**Fixed Parameters:**
 - Update rate: 20 ticks/sec
 - Energy loss: 0.5/tick
 
