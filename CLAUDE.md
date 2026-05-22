@@ -41,7 +41,7 @@ go mod download
 
 - **World** (`main.go`): Central simulation state containing all creatures and terrain generator. Runs at 20 ticks/second in a goroutine with mutex-protected concurrent access (RWMutex for read operations, full Lock for writes).
 
-- **Terrain** (`terrain.go`): Procedural terrain generator using Perlin noise. Generates three terrain types (Water=0, Plains=1, Mountains=2) deterministically from seed. Water borders (50px) around map edges. O(1) memory - no data storage, calculated on demand.
+- **Terrain** (`terrain.go`): Procedural terrain generator using Perlin noise. Generates three terrain types (Water=0, Plains=1, Mountains=2) deterministically from seed. Water borders (50px) around map edges. Full map is pre-generated at startup and stored in World.TerrainMap for fast lookups.
 
 - **Creature** (`creature.go`): Entities that move randomly on plains each tick, gain energy (food) based on population density with complex distribution (exponential penalty for overpopulation, high food chance at low population), and lose 0.5 energy per tick. Cannot move into water/mountains. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring on nearby walkable terrain.
 
@@ -51,6 +51,7 @@ go mod download
   - `/ws` - WebSocket endpoint that sends `world_bounds` message on connection, then accepts JSON messages:
     - `get_region` - returns creatures and terrain in specified region
     - `get_stats` - returns population statistics
+    - `get_map` - returns full terrain map (entire world)
 
 ### Concurrency Model
 

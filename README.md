@@ -153,15 +153,34 @@ Server responds with:
 }
 ```
 
+Get full terrain map:
+```json
+{
+  "type": "get_map"
+}
+```
+
+Server responds with:
+```json
+{
+  "type": "terrain_map",
+  "payload": [[0,1,2,...], [...], ...]
+}
+```
+
+Full world terrain (width×height). 0=Water, 1=Plains, 2=Mountains
+
 ## Simulation Mechanics
 
 **Terrain:**
-- Procedurally generated from seed using Perlin noise
+- Generated at server startup using Perlin noise (from seed)
+- Full map pre-computed and stored in memory
 - Types: Water (0), Plains (1), Mountains (2)
 - Water border (50px) around map edges
 - Creatures can only walk on plains
 - Creatures spawn only on plains
 - Deterministic: same seed = same terrain
+- Use `get_map` WebSocket message to fetch entire map once
 
 **Energy System:**
 - Creatures lose 0.5 energy per tick
