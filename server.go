@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -11,7 +11,7 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		fmt.Println("CheckOrigin")
+		log.Println("CheckOrigin")
 		return true //for develop
 	},
 }
@@ -29,9 +29,9 @@ type ClientMessage struct {
 }
 
 func wsHandler(w *World) http.HandlerFunc {
-	fmt.Println("Start wsHandler")
+	log.Println("Start wsHandler")
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println("New socket connection")
+		log.Println("New socket connection")
 		conn, err := upgrader.Upgrade(rw, r, nil)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -46,7 +46,7 @@ func wsHandler(w *World) http.HandlerFunc {
 				return
 			}
 
-			fmt.Println("Msg", msg.Type, msg.Payload)
+			log.Println("Msg", msg.Type, msg.Payload)
 
 			switch msg.Type {
 			case "get_region":
@@ -65,9 +65,18 @@ func wsHandler(w *World) http.HandlerFunc {
 }
 
 func regionHandler(w *World) http.HandlerFunc {
-	fmt.Println("Start regionHandler")
+	log.Println("Start regionHandler")
 	return func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Print("New connection", r.URL.RawPath)
+		log.Print("New connection", r.URL.RawPath)
+
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == "OPTIONS" {
+			rw.WriteHeader(http.StatusOK)
+			return
+		}
 
 		x1, err1 := strconv.Atoi(r.URL.Query().Get("x1"))
 		x2, err2 := strconv.Atoi(r.URL.Query().Get("x2"))
@@ -76,6 +85,11 @@ func regionHandler(w *World) http.HandlerFunc {
 
 		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
 			http.Error(rw, "invalid query parameters", http.StatusBadRequest)
+			return
+		}
+
+		if x1 < 0 || x2 >= w.Width || y1 < 0 || y2 >= w.Height || x1 > x2 || y1 > y2 {
+			http.Error(rw, "coordinates out of bounds or invalid range", http.StatusBadRequest)
 			return
 		}
 

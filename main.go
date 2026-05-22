@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	TickRate    = 20
-	CPUProfiler = false
+	TickRate = 20
 )
 
 type World struct {
@@ -70,10 +69,6 @@ func (w *World) Run(ctx context.Context) {
 	}
 }
 
-func log(data string) {
-	fmt.Println(data)
-}
-
 func main() {
 	world := &World{
 		Width:     1000,
@@ -107,9 +102,9 @@ func main() {
 	}
 
 	go func() {
-		fmt.Println("Started server http://localhost:8080")
+		log.Println("Started server http://localhost:8080")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log(fmt.Sprintf("Server error: %v", err))
+			log.Printf("Server error: %v", err)
 		}
 	}()
 
@@ -117,15 +112,15 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	fmt.Println("\nShutting down server...")
+	log.Println("\nShutting down server...")
 	cancel()
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log(fmt.Sprintf("Server shutdown error: %v", err))
+		log.Printf("Server shutdown error: %v", err)
 	}
 
-	fmt.Println("Server stopped")
+	log.Println("Server stopped")
 }
