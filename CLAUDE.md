@@ -45,7 +45,9 @@ go mod download
 - **Server** (`server.go`): HTTP handlers for querying world state
   - `/region` - HTTP GET endpoint with query params `x1`, `y1`, `x2`, `y2` returns creatures in that region as JSON. Includes CORS headers and coordinate validation.
   - `/stats` - HTTP GET endpoint that returns population statistics including total creatures and energy distribution (low/medium/high)
-  - `/ws` - WebSocket endpoint that sends `world_bounds` message on connection, then accepts JSON messages with type `get_region` and payload with region coordinates
+  - `/ws` - WebSocket endpoint that sends `world_bounds` message on connection, then accepts JSON messages:
+    - `get_region` - returns creatures in specified region
+    - `get_stats` - returns population statistics
 
 ### Concurrency Model
 

@@ -100,7 +100,9 @@ On connection, server sends world bounds:
 }
 ```
 
-Client message format:
+Client message formats:
+
+Get creatures in region:
 ```json
 {
   "type": "get_region",
@@ -109,6 +111,25 @@ Client message format:
     "y1": 0,
     "x2": 100,
     "y2": 100
+  }
+}
+```
+
+Get population statistics:
+```json
+{
+  "type": "get_stats"
+}
+```
+
+Server responds with:
+```json
+{
+  "type": "stats",
+  "payload": {
+    "tick": 1234,
+    "total_creatures": 9876,
+    ...
   }
 }
 ```
