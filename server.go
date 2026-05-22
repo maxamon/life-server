@@ -40,6 +40,11 @@ type ServerMessage struct {
 	Payload interface{} `json:"payload"`
 }
 
+type RegionResponse struct {
+	Creatures []*Creature   `json:"creatures"`
+	Terrain   [][]byte      `json:"terrain"`
+}
+
 func wsHandler(w *World) http.HandlerFunc {
 	log.Println("Start wsHandler")
 	return func(rw http.ResponseWriter, r *http.Request) {
@@ -77,8 +82,12 @@ func wsHandler(w *World) http.HandlerFunc {
 
 			switch msg.Type {
 			case "get_region":
-				creatures := w.GetRegion(msg.Payload.X1, msg.Payload.Y1, msg.Payload.X2, msg.Payload.Y2)
-				err := conn.WriteJSON(creatures)
+				creatures, terrain := w.GetRegionWithTerrain(msg.Payload.X1, msg.Payload.Y1, msg.Payload.X2, msg.Payload.Y2)
+				response := RegionResponse{
+					Creatures: creatures,
+					Terrain:   terrain,
+				}
+				err := conn.WriteJSON(response)
 				if err != nil {
 					return
 				}
@@ -131,10 +140,15 @@ func regionHandler(w *World) http.HandlerFunc {
 			return
 		}
 
-		creatures := w.GetRegion(x1, y1, x2, y2)
+		creatures, terrain := w.GetRegionWithTerrain(x1, y1, x2, y2)
+
+		response := RegionResponse{
+			Creatures: creatures,
+			Terrain:   terrain,
+		}
 
 		rw.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(rw).Encode(creatures)
+		json.NewEncoder(rw).Encode(response)
 	}
 }
 

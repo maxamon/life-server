@@ -25,6 +25,7 @@ type Config struct {
 	MaxPopulation               int     `json:"max_population"`
 	ReproductionEnergyThreshold float32 `json:"reproduction_energy_threshold"`
 	ReproductionEnergyCost      float32 `json:"reproduction_energy_cost"`
+	TerrainSeed                 int64   `json:"terrain_seed"`
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -53,6 +54,7 @@ type World struct {
 	ReproductionEnergyThreshold float32
 	ReproductionEnergyCost      float32
 	CreatureInitialEnergy       float32
+	Terrain                     *TerrainGenerator
 }
 
 func (w *World) Step() {
@@ -79,6 +81,32 @@ func (w *World) GetRegion(x1, y1, x2, y2 int) []*Creature {
 		}
 	}
 	return result
+}
+
+func (w *World) GetRegionWithTerrain(x1, y1, x2, y2 int) (creatures []*Creature, terrain [][]byte) {
+	w.RLock()
+	defer w.RUnlock()
+
+	// Get creatures
+	for _, c := range w.Creatures {
+		if c.Pos.X >= x1 && c.Pos.X <= x2 &&
+			c.Pos.Y >= y1 && c.Pos.Y <= y2 {
+			creatures = append(creatures, c)
+		}
+	}
+
+	// Get terrain
+	height := y2 - y1 + 1
+	width := x2 - x1 + 1
+	terrain = make([][]byte, height)
+	for dy := 0; dy < height; dy++ {
+		terrain[dy] = make([]byte, width)
+		for dx := 0; dx < width; dx++ {
+			terrain[dy][dx] = byte(w.Terrain.GetTerrain(x1+dx, y1+dy))
+		}
+	}
+
+	return creatures, terrain
 }
 
 func (w *World) RemoveCreature(id int) {
@@ -146,6 +174,8 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	terrain := NewTerrainGenerator(config.TerrainSeed, config.WorldWidth, config.WorldHeight)
+
 	world := &World{
 		Width:                       config.WorldWidth,
 		Height:                      config.WorldHeight,
@@ -155,13 +185,28 @@ func main() {
 		ReproductionEnergyThreshold: config.ReproductionEnergyThreshold,
 		ReproductionEnergyCost:      config.ReproductionEnergyCost,
 		CreatureInitialEnergy:       config.CreatureInitialEnergy,
+		Terrain:                     terrain,
 	}
-	for i := range config.InitialCreatures {
-		world.Creatures[i] = &Creature{
-			ID:     i,
-			Pos:    Vec2{rand.Intn(world.Width), rand.Intn(world.Height)},
-			Energy: config.CreatureInitialEnergy,
+
+	// Spawn creatures only on plains
+	spawned := 0
+	maxAttempts := config.InitialCreatures * 10
+	for attempts := 0; spawned < config.InitialCreatures && attempts < maxAttempts; attempts++ {
+		x := rand.Intn(world.Width)
+		y := rand.Intn(world.Height)
+
+		if terrain.IsWalkable(x, y) {
+			world.Creatures[spawned] = &Creature{
+				ID:     spawned,
+				Pos:    Vec2{x, y},
+				Energy: config.CreatureInitialEnergy,
+			}
+			spawned++
 		}
+	}
+
+	if spawned < config.InitialCreatures {
+		log.Printf("Warning: only spawned %d/%d creatures", spawned, config.InitialCreatures)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

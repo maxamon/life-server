@@ -16,8 +16,8 @@ type Creature struct {
 
 func (c *Creature) Update(w *World) {
 	// Movement
-	dx := rand.Intn(3) - 1
-	dy := rand.Intn(3) - 1
+	dx := 2 * (rand.Intn(3) - 1)
+	dy := 2 * (rand.Intn(3) - 1)
 
 	// Food calculation based on population
 	currentPopulation := len(w.Creatures)
@@ -55,48 +55,48 @@ func (c *Creature) Update(w *World) {
 
 	// Reproduction
 	if c.Energy >= w.ReproductionEnergyThreshold {
-		// Find position near parent
-		newPos := Vec2{
-			X: c.Pos.X + rand.Intn(3) - 1,
-			Y: c.Pos.Y + rand.Intn(3) - 1,
-		}
+		// Try to find walkable position near parent
+		for attempts := 0; attempts < 8; attempts++ {
+			newPos := Vec2{
+				X: c.Pos.X + rand.Intn(3) - 1,
+				Y: c.Pos.Y + rand.Intn(3) - 1,
+			}
 
-		// Clamp to world bounds
-		if newPos.X < 0 {
-			newPos.X = 0
-		}
-		if newPos.Y < 0 {
-			newPos.Y = 0
-		}
-		if newPos.X >= w.Width {
-			newPos.X = w.Width - 1
-		}
-		if newPos.Y >= w.Height {
-			newPos.Y = w.Height - 1
-		}
+			// Bounds check
+			if newPos.X < 0 || newPos.Y < 0 || newPos.X >= w.Width || newPos.Y >= w.Height {
+				continue
+			}
 
-		// Create new creature
-		w.AddCreature(newPos, w.CreatureInitialEnergy)
-
-		// Parent loses energy
-		c.Energy -= w.ReproductionEnergyCost
+			// Terrain check
+			if w.Terrain.IsWalkable(newPos.X, newPos.Y) {
+				w.AddCreature(newPos, w.CreatureInitialEnergy)
+				c.Energy -= w.ReproductionEnergyCost
+				break
+			}
+		}
 	}
 
 	// Move
-	c.Pos.X += dx
-	c.Pos.Y += dy
+	newX := c.Pos.X + dx
+	newY := c.Pos.Y + dy
 
-	// Boundary check
-	if c.Pos.X < 0 {
-		c.Pos.X = 0
+	// Clamp to world bounds
+	if newX < 0 {
+		newX = 0
 	}
-	if c.Pos.Y < 0 {
-		c.Pos.Y = 0
+	if newY < 0 {
+		newY = 0
 	}
-	if c.Pos.X >= w.Width {
-		c.Pos.X = w.Width - 1
+	if newX >= w.Width {
+		newX = w.Width - 1
 	}
-	if c.Pos.Y >= w.Height {
-		c.Pos.Y = w.Height - 1
+	if newY >= w.Height {
+		newY = w.Height - 1
+	}
+
+	// Only move if terrain is walkable
+	if w.Terrain.IsWalkable(newX, newY) {
+		c.Pos.X = newX
+		c.Pos.Y = newY
 	}
 }

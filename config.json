@@ -1,9 +1,10 @@
 {
-  "world_width": 2000,
-  "world_height": 2000,
-  "initial_creatures": 10000,
+  "world_width": 4000,
+  "world_height": 4000,
+  "initial_creatures": 1000,
   "creature_initial_energy": 10.0,
   "max_population": 10000,
   "reproduction_energy_threshold": 15.0,
-  "reproduction_energy_cost": 8.0
+  "reproduction_energy_cost": 8.0,
+  "terrain_seed": 12345
 }
