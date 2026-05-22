@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -51,12 +55,17 @@ func (w *World) RemoveCreature(id int) {
 	delete(w.Creatures, id)
 }
 
-func (w *World) Run() {
+func (w *World) Run(ctx context.Context) {
 	timer := time.NewTicker(time.Second / TickRate)
 	defer timer.Stop()
 
-	for range timer.C {
-		w.Step()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-timer.C:
+			w.Step()
+		}
 	}
 }
 
@@ -78,7 +87,10 @@ func main() {
 		}
 	}
 
-	go world.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go world.Run(ctx)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
@@ -87,6 +99,32 @@ func main() {
 	})
 	mux.HandleFunc("/region", regionHandler(world))
 	mux.HandleFunc("/ws", wsHandler(world))
-	fmt.Println("Started server http://localhost:8080")
-	http.ListenAndServe(":8080", mux)
+
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
+
+	go func() {
+		fmt.Println("Started server http://localhost:8080")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log(fmt.Sprintf("Server error: %v", err))
+		}
+	}()
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	fmt.Println("\nShutting down server...")
+	cancel()
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log(fmt.Sprintf("Server shutdown error: %v", err))
+	}
+
+	fmt.Println("Server stopped")
 }

@@ -37,9 +37,9 @@ func (c *Creature) Update(w *World) {
 		c.Pos.Y = 0
 	}
 	if c.Pos.X >= w.Width {
-		c.Pos.X = w.Width
+		c.Pos.X = w.Width - 1
 	}
 	if c.Pos.Y >= w.Height {
-		c.Pos.Y = w.Height
+		c.Pos.Y = w.Height - 1
 	}
 }

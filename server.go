@@ -43,7 +43,6 @@ func wsHandler(w *World) http.HandlerFunc {
 			var msg ClientMessage
 			err := conn.ReadJSON(&msg)
 			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -54,16 +53,12 @@ func wsHandler(w *World) http.HandlerFunc {
 				creatures := w.GetRegion(msg.Payload.X1, msg.Payload.Y1, msg.Payload.X2, msg.Payload.Y2)
 				err := conn.WriteJSON(creatures)
 				if err != nil {
-					http.Error(rw, err.Error(), http.StatusInternalServerError)
 					return
 				}
 
 			default:
-				err := conn.WriteJSON(`{"error": "unknown msg type"`)
-				if err != nil {
-					http.Error(rw, err.Error(), http.StatusInternalServerError)
-					return
-				}
+				conn.WriteJSON(map[string]string{"error": "unknown msg type"})
+				return
 			}
 		}
 	}
@@ -74,10 +69,15 @@ func regionHandler(w *World) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		fmt.Print("New connection", r.URL.RawPath)
 
-		x1, _ := strconv.Atoi(r.URL.Query().Get("x1"))
-		x2, _ := strconv.Atoi(r.URL.Query().Get("x2"))
-		y1, _ := strconv.Atoi(r.URL.Query().Get("y1"))
-		y2, _ := strconv.Atoi(r.URL.Query().Get("y2"))
+		x1, err1 := strconv.Atoi(r.URL.Query().Get("x1"))
+		x2, err2 := strconv.Atoi(r.URL.Query().Get("x2"))
+		y1, err3 := strconv.Atoi(r.URL.Query().Get("y1"))
+		y2, err4 := strconv.Atoi(r.URL.Query().Get("y2"))
+
+		if err1 != nil || err2 != nil || err3 != nil || err4 != nil {
+			http.Error(rw, "invalid query parameters", http.StatusBadRequest)
+			return
+		}
 
 		creatures := w.GetRegion(x1, y1, x2, y2)
 
