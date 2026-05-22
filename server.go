@@ -23,9 +23,21 @@ type RegionPayload struct {
 	Y2 int `json:"y2"`
 }
 
+type WorldBoundsPayload struct {
+	MinX int `json:"min_x"`
+	MinY int `json:"min_y"`
+	MaxX int `json:"max_x"`
+	MaxY int `json:"max_y"`
+}
+
 type ClientMessage struct {
 	Type    string        `json:"type"`
 	Payload RegionPayload `json:"payload"`
+}
+
+type ServerMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
 }
 
 func wsHandler(w *World) http.HandlerFunc {
@@ -38,6 +50,21 @@ func wsHandler(w *World) http.HandlerFunc {
 			return
 		}
 		defer conn.Close()
+
+		// Send world bounds on connection
+		boundsMsg := ServerMessage{
+			Type: "world_bounds",
+			Payload: WorldBoundsPayload{
+				MinX: 0,
+				MinY: 0,
+				MaxX: w.Width,
+				MaxY: w.Height,
+			},
+		}
+		if err := conn.WriteJSON(boundsMsg); err != nil {
+			log.Printf("Failed to send world bounds: %v", err)
+			return
+		}
 
 		for {
 			var msg ClientMessage

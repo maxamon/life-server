@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
@@ -15,6 +16,27 @@ import (
 const (
 	TickRate = 20
 )
+
+type Config struct {
+	WorldWidth           int     `json:"world_width"`
+	WorldHeight          int     `json:"world_height"`
+	InitialCreatures     int     `json:"initial_creatures"`
+	CreatureInitialEnergy float32 `json:"creature_initial_energy"`
+}
+
+func loadConfig(path string) (*Config, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var config Config
+	if err := json.Unmarshal(file, &config); err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
 
 type World struct {
 	sync.RWMutex
@@ -70,16 +92,21 @@ func (w *World) Run(ctx context.Context) {
 }
 
 func main() {
+	config, err := loadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
 	world := &World{
-		Width:     1000,
-		Height:    1000,
+		Width:     config.WorldWidth,
+		Height:    config.WorldHeight,
 		Creatures: make(map[int]*Creature),
 	}
-	for i := range 10000 {
+	for i := range config.InitialCreatures {
 		world.Creatures[i] = &Creature{
 			ID:     i,
 			Pos:    Vec2{rand.Intn(world.Width), rand.Intn(world.Height)},
-			Energy: 10.0,
+			Energy: config.CreatureInitialEnergy,
 		}
 	}
 
