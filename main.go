@@ -83,7 +83,7 @@ func (w *World) GetRegion(x1, y1, x2, y2 int) []*Creature {
 	return result
 }
 
-func (w *World) GetRegionWithTerrain(x1, y1, x2, y2 int) (creatures []*Creature, terrain [][]byte) {
+func (w *World) GetRegionWithTerrain(x1, y1, x2, y2 int) (creatures []*Creature, terrain [][]int) {
 	w.RLock()
 	defer w.RUnlock()
 
@@ -98,11 +98,11 @@ func (w *World) GetRegionWithTerrain(x1, y1, x2, y2 int) (creatures []*Creature,
 	// Get terrain
 	height := y2 - y1 + 1
 	width := x2 - x1 + 1
-	terrain = make([][]byte, height)
+	terrain = make([][]int, height)
 	for dy := 0; dy < height; dy++ {
-		terrain[dy] = make([]byte, width)
+		terrain[dy] = make([]int, width)
 		for dx := 0; dx < width; dx++ {
-			terrain[dy][dx] = byte(w.Terrain.GetTerrain(x1+dx, y1+dy))
+			terrain[dy][dx] = int(w.Terrain.GetTerrain(x1+dx, y1+dy))
 		}
 	}
 

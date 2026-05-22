@@ -41,8 +41,8 @@ type ServerMessage struct {
 }
 
 type RegionResponse struct {
-	Creatures []*Creature   `json:"creatures"`
-	Terrain   [][]byte      `json:"terrain"`
+	Creatures []*Creature `json:"creatures"`
+	Terrain   [][]int     `json:"terrain"`
 }
 
 func wsHandler(w *World) http.HandlerFunc {
