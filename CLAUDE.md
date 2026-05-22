@@ -40,7 +40,7 @@ go mod download
 
 - **World** (`main.go`): Central simulation state containing all creatures. Runs at 20 ticks/second in a goroutine with mutex-protected concurrent access (RWMutex for read operations, full Lock for writes).
 
-- **Creature** (`creature.go`): Entities that move randomly each tick, gain random energy (food) affected by population density, and lose 0.5 energy per tick. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring nearby.
+- **Creature** (`creature.go`): Entities that move randomly each tick, gain energy (food) based on population density with complex distribution (exponential penalty for overpopulation, high food chance at low population), and lose 0.5 energy per tick. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring nearby.
 
 - **Server** (`server.go`): HTTP handlers for querying world state
   - `/region` - HTTP GET endpoint with query params `x1`, `y1`, `x2`, `y2` returns creatures in that region as JSON. Includes CORS headers and coordinate validation.

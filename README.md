@@ -138,9 +138,10 @@ Server responds with:
 
 **Energy System:**
 - Creatures lose 0.5 energy per tick
-- Food gain varies based on population:
-  - Overpopulation (> max): reduced food
-  - Underpopulation (< max): increased food
+- Food gain varies based on population density:
+  - **Overpopulation (> max)**: Exponential food decrease - the more overcrowded, the less food available
+  - **Low population (< 50% max)**: 70% chance for high food (0.7-1.0), better survival rate
+  - **Normal population (50-100% max)**: Standard random food (0.0-1.0)
 - Death occurs when energy <= 0
 
 **Reproduction:**
