@@ -18,10 +18,13 @@ const (
 )
 
 type Config struct {
-	WorldWidth           int     `json:"world_width"`
-	WorldHeight          int     `json:"world_height"`
-	InitialCreatures     int     `json:"initial_creatures"`
-	CreatureInitialEnergy float32 `json:"creature_initial_energy"`
+	WorldWidth                  int     `json:"world_width"`
+	WorldHeight                 int     `json:"world_height"`
+	InitialCreatures            int     `json:"initial_creatures"`
+	CreatureInitialEnergy       float32 `json:"creature_initial_energy"`
+	MaxPopulation               int     `json:"max_population"`
+	ReproductionEnergyThreshold float32 `json:"reproduction_energy_threshold"`
+	ReproductionEnergyCost      float32 `json:"reproduction_energy_cost"`
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -41,10 +44,15 @@ func loadConfig(path string) (*Config, error) {
 type World struct {
 	sync.RWMutex
 
-	Tick      int
-	Creatures map[int]*Creature
-	Width     int
-	Height    int
+	Tick                        int
+	Creatures                   map[int]*Creature
+	Width                       int
+	Height                      int
+	NextCreatureID              int
+	MaxPopulation               int
+	ReproductionEnergyThreshold float32
+	ReproductionEnergyCost      float32
+	CreatureInitialEnergy       float32
 }
 
 func (w *World) Step() {
@@ -77,6 +85,47 @@ func (w *World) RemoveCreature(id int) {
 	delete(w.Creatures, id)
 }
 
+func (w *World) AddCreature(pos Vec2, energy float32) {
+	id := w.NextCreatureID
+	w.NextCreatureID++
+	w.Creatures[id] = &Creature{
+		ID:     id,
+		Pos:    pos,
+		Energy: energy,
+	}
+}
+
+func (w *World) GetStats() map[string]interface{} {
+	w.RLock()
+	defer w.RUnlock()
+
+	total := len(w.Creatures)
+	lowEnergy := 0    // < 3
+	mediumEnergy := 0 // >= 3 and < 7
+	highEnergy := 0   // >= initial energy
+
+	for _, c := range w.Creatures {
+		if c.Energy < 3 {
+			lowEnergy++
+		} else if c.Energy < 7 {
+			mediumEnergy++
+		}
+		if c.Energy >= w.CreatureInitialEnergy {
+			highEnergy++
+		}
+	}
+
+	return map[string]interface{}{
+		"tick":                  w.Tick,
+		"total_creatures":       total,
+		"low_energy_count":      lowEnergy,
+		"medium_energy_count":   mediumEnergy,
+		"high_energy_count":     highEnergy,
+		"max_population":        w.MaxPopulation,
+		"population_percentage": float32(total) / float32(w.MaxPopulation) * 100,
+	}
+}
+
 func (w *World) Run(ctx context.Context) {
 	timer := time.NewTicker(time.Second / TickRate)
 	defer timer.Stop()
@@ -98,9 +147,14 @@ func main() {
 	}
 
 	world := &World{
-		Width:     config.WorldWidth,
-		Height:    config.WorldHeight,
-		Creatures: make(map[int]*Creature),
+		Width:                       config.WorldWidth,
+		Height:                      config.WorldHeight,
+		Creatures:                   make(map[int]*Creature),
+		NextCreatureID:              config.InitialCreatures,
+		MaxPopulation:               config.MaxPopulation,
+		ReproductionEnergyThreshold: config.ReproductionEnergyThreshold,
+		ReproductionEnergyCost:      config.ReproductionEnergyCost,
+		CreatureInitialEnergy:       config.CreatureInitialEnergy,
 	}
 	for i := range config.InitialCreatures {
 		world.Creatures[i] = &Creature{
@@ -121,6 +175,7 @@ func main() {
 		rw.Write([]byte(`<html><body><h1>Hello world</h1></body></html>`))
 	})
 	mux.HandleFunc("/region", regionHandler(world))
+	mux.HandleFunc("/stats", statsHandler(world))
 	mux.HandleFunc("/ws", wsHandler(world))
 
 	server := &http.Server{

@@ -2,5 +2,8 @@
   "world_width": 1000,
   "world_height": 1000,
   "initial_creatures": 10000,
-  "creature_initial_energy": 10.0
+  "creature_initial_energy": 10.0,
+  "max_population": 15000,
+  "reproduction_energy_threshold": 15.0,
+  "reproduction_energy_cost": 8.0
 }

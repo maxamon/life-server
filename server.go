@@ -126,3 +126,22 @@ func regionHandler(w *World) http.HandlerFunc {
 		json.NewEncoder(rw).Encode(creatures)
 	}
 }
+
+func statsHandler(w *World) http.HandlerFunc {
+	log.Println("Start statsHandler")
+	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		if r.Method == "OPTIONS" {
+			rw.WriteHeader(http.StatusOK)
+			return
+		}
+
+		stats := w.GetStats()
+
+		rw.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(rw).Encode(stats)
+	}
+}
