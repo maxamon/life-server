@@ -55,6 +55,7 @@ type World struct {
 	ReproductionEnergyCost      float32
 	CreatureInitialEnergy       float32
 	Terrain                     *TerrainGenerator
+	TerrainMap                  [][]int
 }
 
 func (w *World) Step() {
@@ -95,18 +96,24 @@ func (w *World) GetRegionWithTerrain(x1, y1, x2, y2 int) (creatures []*Creature,
 		}
 	}
 
-	// Get terrain
+	// Get terrain from pre-generated map
 	height := y2 - y1 + 1
 	width := x2 - x1 + 1
 	terrain = make([][]int, height)
 	for dy := 0; dy < height; dy++ {
 		terrain[dy] = make([]int, width)
 		for dx := 0; dx < width; dx++ {
-			terrain[dy][dx] = int(w.Terrain.GetTerrain(x1+dx, y1+dy))
+			terrain[dy][dx] = w.TerrainMap[y1+dy][x1+dx]
 		}
 	}
 
 	return creatures, terrain
+}
+
+func (w *World) GetFullTerrainMap() [][]int {
+	w.RLock()
+	defer w.RUnlock()
+	return w.TerrainMap
 }
 
 func (w *World) RemoveCreature(id int) {
@@ -176,6 +183,17 @@ func main() {
 
 	terrain := NewTerrainGenerator(config.TerrainSeed, config.WorldWidth, config.WorldHeight)
 
+	// Generate full terrain map
+	log.Println("Generating terrain map...")
+	terrainMap := make([][]int, config.WorldHeight)
+	for y := 0; y < config.WorldHeight; y++ {
+		terrainMap[y] = make([]int, config.WorldWidth)
+		for x := 0; x < config.WorldWidth; x++ {
+			terrainMap[y][x] = int(terrain.GetTerrain(x, y))
+		}
+	}
+	log.Println("Terrain map generated")
+
 	world := &World{
 		Width:                       config.WorldWidth,
 		Height:                      config.WorldHeight,
@@ -186,16 +204,18 @@ func main() {
 		ReproductionEnergyCost:      config.ReproductionEnergyCost,
 		CreatureInitialEnergy:       config.CreatureInitialEnergy,
 		Terrain:                     terrain,
+		TerrainMap:                  terrainMap,
 	}
 
 	// Spawn creatures only on plains
+	log.Println("Spawning creatures...")
 	spawned := 0
 	maxAttempts := config.InitialCreatures * 10
 	for attempts := 0; spawned < config.InitialCreatures && attempts < maxAttempts; attempts++ {
 		x := rand.Intn(world.Width)
 		y := rand.Intn(world.Height)
 
-		if terrain.IsWalkable(x, y) {
+		if terrainMap[y][x] == 1 { // 1 = Plains
 			world.Creatures[spawned] = &Creature{
 				ID:     spawned,
 				Pos:    Vec2{x, y},

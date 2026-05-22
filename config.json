@@ -6,5 +6,5 @@
   "max_population": 10000,
   "reproduction_energy_threshold": 15.0,
   "reproduction_energy_cost": 8.0,
-  "terrain_seed": 12345
+  "terrain_seed": 528423
 }

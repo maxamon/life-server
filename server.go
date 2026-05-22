@@ -103,6 +103,17 @@ func wsHandler(w *World) http.HandlerFunc {
 					return
 				}
 
+			case "get_map":
+				terrainMap := w.GetFullTerrainMap()
+				response := ServerMessage{
+					Type:    "terrain_map",
+					Payload: terrainMap,
+				}
+				err := conn.WriteJSON(response)
+				if err != nil {
+					return
+				}
+
 			default:
 				conn.WriteJSON(map[string]string{"error": "unknown msg type"})
 				return

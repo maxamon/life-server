@@ -67,8 +67,8 @@ func (c *Creature) Update(w *World) {
 				continue
 			}
 
-			// Terrain check
-			if w.Terrain.IsWalkable(newPos.X, newPos.Y) {
+			// Terrain check (1 = Plains = walkable)
+			if w.TerrainMap[newPos.Y][newPos.X] == 1 {
 				w.AddCreature(newPos, w.CreatureInitialEnergy)
 				c.Energy -= w.ReproductionEnergyCost
 				break
@@ -94,8 +94,8 @@ func (c *Creature) Update(w *World) {
 		newY = w.Height - 1
 	}
 
-	// Only move if terrain is walkable
-	if w.Terrain.IsWalkable(newX, newY) {
+	// Only move if terrain is walkable (1 = Plains)
+	if w.TerrainMap[newY][newX] == 1 {
 		c.Pos.X = newX
 		c.Pos.Y = newY
 	}
