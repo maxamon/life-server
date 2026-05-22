@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -82,7 +83,7 @@ func main() {
 	for i := range 10000 {
 		world.Creatures[i] = &Creature{
 			ID:     i,
-			Pos:    Vec2{i % 1000, i % 1000},
+			Pos:    Vec2{rand.Intn(world.Width), rand.Intn(world.Height)},
 			Energy: 10.0,
 		}
 	}
