@@ -71,12 +71,4 @@ Message format:
 - **Creature** - entities with position and energy
 - **Server** - HTTP/WebSocket handlers
 
-Simulation runs in separate goroutine with mutex synchronization.
-
-## Known Issues
-
-- Boundary checks in creature.go:40,42 (should be `w.Width - 1`)
-- Error handling after WebSocket upgrade (server.go:47,57,64)
-- Invalid JSON in error response (server.go:62)
-- No input validation for query parameters
-- No graceful shutdown
+Simulation runs in separate goroutine with mutex synchronization and graceful shutdown support.
