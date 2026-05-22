@@ -82,7 +82,15 @@ func wsHandler(w *World) http.HandlerFunc {
 
 			switch msg.Type {
 			case "get_region":
-				creatures, terrain := w.GetRegionWithTerrain(msg.Payload.X1, msg.Payload.Y1, msg.Payload.X2, msg.Payload.Y2)
+				x1, y1, x2, y2 := msg.Payload.X1, msg.Payload.Y1, msg.Payload.X2, msg.Payload.Y2
+
+				// Validate coordinates
+				if x1 < 0 || x2 >= w.Width || y1 < 0 || y2 >= w.Height || x1 > x2 || y1 > y2 {
+					conn.WriteJSON(map[string]string{"error": "coordinates out of bounds"})
+					continue
+				}
+
+				creatures, terrain := w.GetRegionWithTerrain(x1, y1, x2, y2)
 				response := RegionResponse{
 					Creatures: creatures,
 					Terrain:   terrain,
