@@ -83,6 +83,17 @@ func wsHandler(w *World) http.HandlerFunc {
 					return
 				}
 
+			case "get_stats":
+				stats := w.GetStats()
+				response := ServerMessage{
+					Type:    "stats",
+					Payload: stats,
+				}
+				err := conn.WriteJSON(response)
+				if err != nil {
+					return
+				}
+
 			default:
 				conn.WriteJSON(map[string]string{"error": "unknown msg type"})
 				return
