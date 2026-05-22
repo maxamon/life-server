@@ -6,6 +6,19 @@ Go server that simulates creatures moving in a 2D world. Creatures randomly move
 
 - Go 1.22.5+
 
+## Configuration
+
+Edit `config.json` to adjust simulation parameters:
+
+```json
+{
+  "world_width": 1000,
+  "world_height": 1000,
+  "initial_creatures": 10000,
+  "creature_initial_energy": 10.0
+}
+```
+
 ## Quick Start
 
 ```bash
@@ -44,7 +57,20 @@ curl "http://localhost:8080/region?x1=0&y1=0&x2=100&y2=100"
 
 **WS /ws** - WebSocket connection for real-time data
 
-Message format:
+On connection, server sends world bounds:
+```json
+{
+  "type": "world_bounds",
+  "payload": {
+    "min_x": 0,
+    "min_y": 0,
+    "max_x": 1000,
+    "max_y": 1000
+  }
+}
+```
+
+Client message format:
 ```json
 {
   "type": "get_region",
@@ -59,11 +85,14 @@ Message format:
 
 ## Simulation Parameters
 
+Default values (configurable in `config.json`):
 - World size: 1000x1000
 - Initial creatures: 10,000
+- Starting energy: 10.0
+
+Fixed parameters:
 - Update rate: 20 ticks/sec
 - Energy loss: 0.5/tick
-- Starting energy: 10.0
 
 ## Architecture
 
