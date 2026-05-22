@@ -21,17 +21,28 @@ func (c *Creature) Update(w *World) {
 
 	// Food calculation based on population
 	currentPopulation := len(w.Creatures)
-	foodMultiplier := float32(1.0)
+	var food float32
+
+	populationRatio := float32(currentPopulation) / float32(w.MaxPopulation)
 
 	if currentPopulation > w.MaxPopulation {
-		// Overpopulation - less food
-		foodMultiplier = float32(w.MaxPopulation) / float32(currentPopulation)
-	} else if currentPopulation < w.MaxPopulation {
-		// Underpopulation - more food
-		foodMultiplier = 1.0 + (float32(w.MaxPopulation-currentPopulation) / float32(w.MaxPopulation) * 0.5)
+		// Overpopulation - exponential food decrease
+		// The more overpopulated, the less food
+		overpopulationFactor := populationRatio - 1.0 // 0.0 to infinity
+		foodMultiplier := float32(1.0) / (1.0 + overpopulationFactor*overpopulationFactor*2.0)
+		food = rand.Float32() * foodMultiplier
+	} else if populationRatio < 0.5 {
+		// Low population (< 50%) - higher chance of max food
+		// Use weighted random: 70% chance for high food (0.7-1.0), 30% for normal (0.0-1.0)
+		if rand.Float32() < 0.7 {
+			food = 0.7 + rand.Float32()*0.3 // 0.7 to 1.0
+		} else {
+			food = rand.Float32() // 0.0 to 1.0
+		}
+	} else {
+		// Normal population (50% to 100%) - standard food
+		food = rand.Float32()
 	}
-
-	food := rand.Float32() * foodMultiplier
 
 	c.Energy += food
 	c.Energy -= 0.5
