@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-A life simulation server in Go that simulates creatures moving in a 2D world. Creatures randomly move, consume energy, die when energy depletes, and can reproduce when well-fed. The simulation includes overpopulation mechanics that affect food availability. The server exposes the world state via HTTP REST and WebSocket APIs.
+A life simulation server in Go that simulates creatures moving in a 2D world with procedurally generated terrain. Creatures randomly move on plains, consume energy, die when energy depletes, and can reproduce when well-fed. The simulation includes overpopulation mechanics that affect food availability. Terrain is generated using Perlin noise and includes water, plains, and mountains. The server exposes the world state via HTTP REST and WebSocket APIs.
 
 ## Configuration
 
@@ -15,6 +15,7 @@ Simulation parameters are loaded from `config.json` at startup:
 - `max_population` - Maximum sustainable population (affects food multiplier)
 - `reproduction_energy_threshold` - Energy required to reproduce
 - `reproduction_energy_cost` - Energy cost for parent when reproducing
+- `terrain_seed` - Seed for procedural terrain generation (deterministic)
 
 ## Commands
 
@@ -38,15 +39,17 @@ go mod download
 
 ### Core Components
 
-- **World** (`main.go`): Central simulation state containing all creatures. Runs at 20 ticks/second in a goroutine with mutex-protected concurrent access (RWMutex for read operations, full Lock for writes).
+- **World** (`main.go`): Central simulation state containing all creatures and terrain generator. Runs at 20 ticks/second in a goroutine with mutex-protected concurrent access (RWMutex for read operations, full Lock for writes).
 
-- **Creature** (`creature.go`): Entities that move randomly each tick, gain energy (food) based on population density with complex distribution (exponential penalty for overpopulation, high food chance at low population), and lose 0.5 energy per tick. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring nearby.
+- **Terrain** (`terrain.go`): Procedural terrain generator using Perlin noise. Generates three terrain types (Water=0, Plains=1, Mountains=2) deterministically from seed. Water borders (50px) around map edges. O(1) memory - no data storage, calculated on demand.
+
+- **Creature** (`creature.go`): Entities that move randomly on plains each tick, gain energy (food) based on population density with complex distribution (exponential penalty for overpopulation, high food chance at low population), and lose 0.5 energy per tick. Cannot move into water/mountains. Die when energy ≤ 0. Reproduce when energy >= threshold by spawning offspring on nearby walkable terrain.
 
 - **Server** (`server.go`): HTTP handlers for querying world state
-  - `/region` - HTTP GET endpoint with query params `x1`, `y1`, `x2`, `y2` returns creatures in that region as JSON. Includes CORS headers and coordinate validation.
+  - `/region` - HTTP GET endpoint with query params `x1`, `y1`, `x2`, `y2` returns creatures and terrain data in that region as JSON. Includes CORS headers and coordinate validation.
   - `/stats` - HTTP GET endpoint that returns population statistics including total creatures and energy distribution (low/medium/high)
   - `/ws` - WebSocket endpoint that sends `world_bounds` message on connection, then accepts JSON messages:
-    - `get_region` - returns creatures in specified region
+    - `get_region` - returns creatures and terrain in specified region
     - `get_stats` - returns population statistics
 
 ### Concurrency Model

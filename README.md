@@ -29,6 +29,7 @@ Edit `config.json` to adjust simulation parameters:
 - `max_population` - Maximum sustainable population (affects food availability)
 - `reproduction_energy_threshold` - Energy needed to reproduce
 - `reproduction_energy_cost` - Energy parent loses when reproducing
+- `terrain_seed` - Seed for procedural terrain generation (deterministic)
 
 ## Quick Start
 
@@ -53,11 +54,21 @@ go build
 
 ### HTTP REST
 
-**GET /region** - Get creatures in region
+**GET /region** - Get creatures and terrain in region
 
 Query params:
 - `x1`, `y1` - top-left corner
 - `x2`, `y2` - bottom-right corner
+
+Returns:
+```json
+{
+  "creatures": [...],
+  "terrain": [[0,1,1,2,...], [...]]
+}
+```
+
+Terrain values: 0=Water, 1=Plains, 2=Mountains
 
 Example:
 ```bash
@@ -102,7 +113,7 @@ On connection, server sends world bounds:
 
 Client message formats:
 
-Get creatures in region:
+Get creatures and terrain in region:
 ```json
 {
   "type": "get_region",
@@ -112,6 +123,14 @@ Get creatures in region:
     "x2": 100,
     "y2": 100
   }
+}
+```
+
+Returns:
+```json
+{
+  "creatures": [...],
+  "terrain": [[0,1,1,2,...], [...]]
 }
 ```
 
@@ -135,6 +154,14 @@ Server responds with:
 ```
 
 ## Simulation Mechanics
+
+**Terrain:**
+- Procedurally generated from seed using Perlin noise
+- Types: Water (0), Plains (1), Mountains (2)
+- Water border (50px) around map edges
+- Creatures can only walk on plains
+- Creatures spawn only on plains
+- Deterministic: same seed = same terrain
 
 **Energy System:**
 - Creatures lose 0.5 energy per tick
