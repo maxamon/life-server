@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"math/rand"
 )
 
@@ -9,15 +10,37 @@ type Vec2 struct {
 }
 
 type Creature struct {
-	ID     int
-	Pos    Vec2
-	Energy float32
+	ID          int
+	Pos         Vec2
+	MovingAngel float64
+	Energy      float32
+}
+
+func sign(val float64) float64 {
+	if val > 0.2 { // Зона нечувствительности 0.2, как в JS примере
+		return 1
+	}
+	if val < -0.2 {
+		return -1
+	}
+	return 0
 }
 
 func (c *Creature) Update(w *World) {
+	maxDeviation := math.Pi / 4.0
+	change := (rand.Float64()*2.0 - 1.0) * maxDeviation
+
+	c.MovingAngel += change
+
+	velocityX := sign(math.Cos(float64(c.MovingAngel)))
+	velocityY := sign(math.Sin(float64(c.MovingAngel)))
+
+	// Двигаем существо
+	dx := int(velocityX)
+	dy := int(velocityY)
 	// Movement
-	dx := 2 * (rand.Intn(3) - 1)
-	dy := 2 * (rand.Intn(3) - 1)
+	// dx := (rand.Intn(3) - 1)
+	// dy := (rand.Intn(3) - 1)
 
 	// Food calculation based on population
 	currentPopulation := len(w.Creatures)
@@ -45,6 +68,7 @@ func (c *Creature) Update(w *World) {
 	}
 
 	c.Energy += food
+	// c.Energy -= food
 	c.Energy -= 0.5
 
 	// Death
@@ -69,7 +93,8 @@ func (c *Creature) Update(w *World) {
 
 			// Terrain check (1 = Plains = walkable)
 			if w.TerrainMap[newPos.Y][newPos.X] == 1 {
-				w.AddCreature(newPos, w.CreatureInitialEnergy)
+				movingAngel := rand.Float64() * 2 * math.Pi
+				w.AddCreature(newPos, w.CreatureInitialEnergy, movingAngel)
 				c.Energy -= w.ReproductionEnergyCost
 				break
 			}

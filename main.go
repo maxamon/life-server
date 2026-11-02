@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
@@ -120,13 +121,14 @@ func (w *World) RemoveCreature(id int) {
 	delete(w.Creatures, id)
 }
 
-func (w *World) AddCreature(pos Vec2, energy float32) {
+func (w *World) AddCreature(pos Vec2, energy float32, movingAngel float64) {
 	id := w.NextCreatureID
 	w.NextCreatureID++
 	w.Creatures[id] = &Creature{
-		ID:     id,
-		Pos:    pos,
-		Energy: energy,
+		ID:          id,
+		Pos:         pos,
+		MovingAngel: movingAngel,
+		Energy:      energy,
 	}
 }
 
@@ -216,10 +218,12 @@ func main() {
 		y := rand.Intn(world.Height)
 
 		if terrainMap[y][x] == 1 { // 1 = Plains
+			movingAngel := rand.Float64() * 2 * math.Pi
 			world.Creatures[spawned] = &Creature{
-				ID:     spawned,
-				Pos:    Vec2{x, y},
-				Energy: config.CreatureInitialEnergy,
+				ID:          spawned,
+				Pos:         Vec2{x, y},
+				MovingAngel: movingAngel,
+				Energy:      config.CreatureInitialEnergy,
 			}
 			spawned++
 		}
